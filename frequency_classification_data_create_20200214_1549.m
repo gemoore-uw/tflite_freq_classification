@@ -11,13 +11,13 @@ stop_time = 10/(f_max/27);    % 10 cycles of the lowest frequency
 t = (0:dt:stop_time-dt);     % seconds
 packet_length = length(t);
 
-n_packets_per_type = 2000;
+n_packets_per_type = 10000;
 dataset = zeros(n_f_types+1, n_packets_per_type, packet_length, 'uint16');
 gain = 0.25;
 apollo3_blue_adc_v_ref = 1.5;
 adc_bit_resolution = 14;
 offset = apollo3_blue_adc_v_ref/2;
-snr = 20;
+snr = 10;
 
 temp_dataset = zeros(n_packets_per_type, packet_length);
 temp_dataset = abs(awgn(temp_dataset+1.0, snr, 'measured')-1.0); % Creating noise packets
@@ -59,11 +59,11 @@ zoom xon;
 
 % writematrix(dataset,'f_sweep_02.csv','Delimiter',',')  
 % writematrix(classifications,'f_class_02.csv','Delimiter',',') 
-
-save('f_sweep_05.mat', 'dataset', '-v7.3') % For variables larger than 2GB use MAT-file version 7.3 or later
-% save('f_sweep_04.mat', 'dataset')
-save('f_features_05.mat', 'classifications', '-v7.3')
-% save('f_features_05.mat', 'classifications')
+dataset_version = 'v06'
+save_file = strcat('f_sweep_snr_', string(snr),'_',dataset_version,'.mat')
+save(save_file, 'dataset', '-v7.3') % For variables larger than 2GB use MAT-file version 7.3 or later
+save_file = strcat('f_features_snr_', string(snr),'_',dataset_version,'.mat')
+save(save_file, 'classifications', '-v7.3')
 
 % fid = fopen('f_sweep_00.dat', 'w');
 % fwrite(fid, dataset);
