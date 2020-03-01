@@ -7,17 +7,17 @@ f_s = max_samp_per_sec;
 dt = 1/f_s;
 f_max = max_samp_per_sec/100; % At least 100 samples per cycle
 
-stop_time = 10/(f_max/27);    % 10 cycles of the lowest frequency 
+stop_time = 10/(f_max/n_f_types);    % 10 cycles of the lowest frequency 
 t = (0:dt:stop_time-dt);     % seconds
 packet_length = length(t);
 
-n_packets_per_type = 10000;
+n_packets_per_type = 2000;
 dataset = zeros(n_f_types+1, n_packets_per_type, packet_length, 'uint16');
 gain = 0.25;
 apollo3_blue_adc_v_ref = 1.5;
 adc_bit_resolution = 14;
 offset = apollo3_blue_adc_v_ref/2;
-snr = 10;
+snr = 20;
 
 temp_dataset = zeros(n_packets_per_type, packet_length);
 temp_dataset = abs(awgn(temp_dataset+1.0, snr, 'measured')-1.0); % Creating noise packets
@@ -25,18 +25,18 @@ dataset(1,:,:) = uint16(round((2^adc_bit_resolution-1)*...
         temp_dataset/apollo3_blue_adc_v_ref));
     
 classifications = uint16(zeros(n_f_types+1,n_packets_per_type));
-
-for f_divisor = 1:n_f_types
-    f0 = f_max/f_divisor;
+f_list = round(linspace(f_max, f_max/n_f_types, n_f_types));
+for f_idx = 1:n_f_types
+    f0 = f_list(f_idx);
     orig_sig = gain*sin(2*pi*f0.*t)+ offset;
     temp_dataset = repmat(squeeze(orig_sig),n_packets_per_type,1);  
     temp_dataset = awgn(temp_dataset, snr, 'measured');
-    dataset_idx = (n_f_types+1)-(f_divisor-1); %accounts for Noise in 0th idx
+    dataset_idx = (n_f_types+1)-(f_idx-1); %accounts for Noise in 0th idx
     dataset(dataset_idx,:,:) = uint16(round((2^adc_bit_resolution-1)*...
         temp_dataset/apollo3_blue_adc_v_ref));  
     if(f0 - 2^16 > 0)
         f0
-        f_divisor
+        f_idx
         break;
     end
     classifications(dataset_idx,:) = uint16(f0);
@@ -59,7 +59,7 @@ zoom xon;
 
 % writematrix(dataset,'f_sweep_02.csv','Delimiter',',')  
 % writematrix(classifications,'f_class_02.csv','Delimiter',',') 
-dataset_version = 'v06'
+dataset_version = 'v10';
 save_file = strcat('f_sweep_snr_', string(snr),'_',dataset_version,'.mat')
 save(save_file, 'dataset', '-v7.3') % For variables larger than 2GB use MAT-file version 7.3 or later
 save_file = strcat('f_features_snr_', string(snr),'_',dataset_version,'.mat')
